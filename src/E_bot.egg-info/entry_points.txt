@@ -1,0 +1,2 @@
+[console_scripts]
+e-bot = e_bot.main:run

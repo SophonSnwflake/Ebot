@@ -1,0 +1,2 @@
+[console_scripts]
+napcat-bot = napcat_bot.main:run

@@ -1,0 +1,25 @@
+[project]
+name = "E-bot"
+version = "0.1.0"
+description = "A minimal OneBot v11 reverse-ws bot server for E"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "websockets>=12.0",
+  "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+llm = [
+  "openai>=1.40.0",
+]
+
+[project.scripts]
+e-bot = "e_bot.main:run"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
