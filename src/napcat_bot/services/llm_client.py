@@ -7,6 +7,7 @@ class LLMRequest:
     user_id: int
     group_id: int
     text: str
+    memories: list[str] | None = None
 
 
 class LLMClient:
@@ -15,13 +16,6 @@ class LLMClient:
 
 
 class OpenAICompatLLMClient(LLMClient):
-    """
-    用 httpx 直连 OpenAI-compatible API：
-    - POST {base_url}/chat/completions
-    - Header: Authorization: Bearer <api_key>
-    - Body: {model, messages, temperature, ...}
-    """
-
     def __init__(
         self,
         base_url: str,
@@ -32,9 +26,6 @@ class OpenAICompatLLMClient(LLMClient):
         timeout_s: float = 60.0,
     ):
         base_url = base_url.rstrip("/")
-        # 兼容两种写法：
-        # 1) base_url="https://api.xxx.com/v1"
-        # 2) base_url="https://api.xxx.com"
         if base_url.endswith("/v1"):
             self.base_v1 = base_url
         else:
@@ -44,7 +35,7 @@ class OpenAICompatLLMClient(LLMClient):
         self.model = model
         self.prefix = prefix
         self.temperature = temperature
-        self.client = httpx.AsyncClient(timeout=timeout_s)
+        self.client = httpx.AsyncClient(timeout=timeout_s, trust_env=False)
 
     async def generate(self, req: LLMRequest) -> str:
         url = f"{self.base_v1}/chat/completions"
@@ -52,12 +43,20 @@ class OpenAICompatLLMClient(LLMClient):
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+
+        messages = [{"role": "system", "content": "你的名字是绫濑"}]
+
+        if req.memories:
+            mem_block = "以下是与当前对话相关的记忆（可能不完全准确，仅供参考）：\n" + "\n".join(
+                f"- {m}" for m in req.memories
+            )
+            messages.append({"role": "system", "content": mem_block})
+
+        messages.append({"role": "user", "content": req.text})
+
         payload = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": "你的名字叫Ebot，也叫小e，你是聊天机器人。"},
-                {"role": "user", "content": req.text},
-            ],
+            "messages": messages,
             "temperature": self.temperature,
         }
 
@@ -65,7 +64,6 @@ class OpenAICompatLLMClient(LLMClient):
         resp.raise_for_status()
         data = resp.json()
 
-        # OpenAI-compatible: choices[0].message.content
         text = (data.get("choices", [{}])[0].get("message", {}) or {}).get("content", "") or ""
         return f"{self.prefix}{text}" if self.prefix else text
 

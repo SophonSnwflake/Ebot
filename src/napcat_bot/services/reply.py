@@ -9,4 +9,4 @@ async def send_group_text(ws, group_id: int, text: str, echo: Optional[str] = No
     }
     if echo is not None:
         payload["echo"] = echo
-    await ws.send(json.dumps(payload, ensure_ascii=False))
+    await ws.send(json.dumps(payload, ensure_ascii=False)) 
